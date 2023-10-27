@@ -1,6 +1,8 @@
 package com.in28minutes.springboot.myfirstwebapp.todo;
 
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
@@ -27,7 +29,8 @@ public class ToDoController {
 
     @GetMapping("list-todos")
     public String listAllTodos(ModelMap model) {
-        List<ToDo> toDos = toDoService.findByUsername("in28minutes");
+        String username = getLoggedInUsername(model);
+        List<ToDo> toDos = toDoService.findByUsername(username);
         model.addAttribute("toDos", toDos);
 
         return "listTodos";
@@ -35,7 +38,7 @@ public class ToDoController {
 
     @GetMapping("add-todo")
     public String showNewTodoPage(ModelMap model) {
-        String username = (String)model.get("name");
+        String username = getLoggedInUsername(model);
         ToDo toDo = new ToDo(0, username, "", LocalDate.now().plusYears(1), false);
         model.put("toDo", toDo);
         return "todo";
@@ -48,7 +51,7 @@ public class ToDoController {
             return "todo";
         }
 
-        String username = (String)model.get("name");
+        String username = getLoggedInUsername(model);
         toDoService.addTodo(username, toDo.getDescription(),
                 toDo.getTargetDate(), false);
         return "redirect:list-todos";
@@ -74,9 +77,17 @@ public class ToDoController {
             return "todo";
         }
 
-        String username = (String)model.get("name");
+        String username = getLoggedInUsername(model);
         toDo.setUsername(username);
         toDoService.updateTodo(toDo);
         return "redirect:list-todos";
+    }
+
+    private static String getLoggedInUsername(ModelMap model) {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        return authentication.getName();
     }
 }
